@@ -70,6 +70,7 @@ module "cdn" {
   }
 
   default_root_object = "index.html"
+
 }
 
 data "aws_iam_policy_document" "s3_policy" {
@@ -94,4 +95,23 @@ data "aws_iam_policy_document" "s3_policy" {
 resource "aws_s3_bucket_policy" "bucket_policy" {
   bucket = module.s3_source.s3_bucket_id
   policy = data.aws_iam_policy_document.s3_policy.json
+}
+
+# Next two are hacks that shouldnt be done, but its a shortcut to not have to build the full CI/CD Pipeline
+resource "aws_s3_object" "file_upload" {
+  bucket       = module.s3_source.s3_bucket_id
+  key          = "index.html"
+  source       = "index.html"
+  source_hash  = filemd5("index.html")
+  content_type = "text/html"
+
+}
+
+resource "null_resource" "deployment" {
+   provisioner "local-exec" {
+    command = "aws cloudfront create-invalidation --distribution-id ${module.cdn.cloudfront_distribution_id} --paths '/index.html'"
+  }
+  triggers = {
+    always_run = timestamp()
+  }
 }
