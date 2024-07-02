@@ -1,0 +1,1 @@
+# terraform-aws-static-file-hosting
